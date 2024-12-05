@@ -94,6 +94,13 @@ export const CreateOrder: React.FC = () => {
       [field]: value,
     };
 
+    if (field === 'price') {
+      updatedCart[index] = {
+        ...updatedCart[index],
+        ['discountedPrice']: value as number,
+      };
+    }
+
     if (field === 'discountCode') {
       const discountCode = value as string;
       const discount = discountCodesMock.find((d) => d.code === discountCode);
@@ -292,7 +299,11 @@ export const CreateOrder: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        {formatVND(item.discountedPrice * item.quantity)}
+                        {formatVND(
+                          item.discountAmount == 0
+                            ? item.price * item.quantity
+                            : item.discountedPrice * item.quantity
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -446,7 +457,11 @@ export const CreateOrder: React.FC = () => {
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell>{item.discountCode}</TableCell>
                       <TableCell>
-                        {formatVND(item.discountedPrice * item.quantity)}
+                        {formatVND(
+                          item.discountAmount == 0
+                            ? item.price * item.quantity
+                            : item.discountedPrice * item.quantity
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
