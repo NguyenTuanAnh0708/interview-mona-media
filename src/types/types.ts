@@ -11,7 +11,6 @@ export type CartItem = {
   quantity: number;
   discountCode: string;
   discountAmount: number;
-  discountedPrice: number;
 };
 
 export type FormData = {

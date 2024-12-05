@@ -6,7 +6,6 @@ import {
   CardContent,
   Fade,
   FormControlLabel,
-  Grid,
   MenuItem,
   Modal,
   Paper,
@@ -22,8 +21,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+
+import Grid from '@mui/material/Grid2';
 import {useForm, Controller} from 'react-hook-form';
-import {formatVND, parseVNDInput} from '../../lib/utils/currencyUtils';
+import {formatVND} from '../../lib/utils/currencyUtils';
 
 import type {
   CartItem,
@@ -59,7 +60,10 @@ export const CreateOrder: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
   const total = useMemo(
     () =>
-      cart.reduce((sum, item) => sum + item.discountedPrice * item.quantity, 0),
+      cart.reduce(
+        (sum, item) => sum + (item.price - item.discountAmount) * item.quantity,
+        0
+      ),
     [cart]
   );
 
@@ -76,7 +80,6 @@ export const CreateOrder: React.FC = () => {
           ...product,
           quantity: 1,
           discountCode: '',
-          discountedPrice: product.price,
           discountAmount: 0,
         },
       ]);
@@ -94,40 +97,28 @@ export const CreateOrder: React.FC = () => {
       [field]: value,
     };
 
-    if (field === 'price') {
-      updatedCart[index] = {
-        ...updatedCart[index],
-        ['discountedPrice']: value as number,
-      };
-    }
-
     if (field === 'discountCode') {
       const discountCode = value as string;
       const discount = discountCodesMock.find((d) => d.code === discountCode);
       let discountAmount = 0;
-      let discountedPrice = updatedCart[index].price;
 
       if (discount) {
         const updatedItem = updatedCart[index];
 
         if (discount.type === 'percent') {
-          discountAmount = updatedItem.price * (discount.value / 100);
-          discountedPrice = updatedItem.price - discountAmount;
+          discountAmount = (updatedItem.price * discount.value) / 100;
         } else if (discount.type === 'flat') {
           discountAmount = discount.value;
-          discountedPrice = Math.max(0, updatedItem.price - discountAmount);
         }
 
         updatedCart[index] = {
           ...updatedItem,
           discountAmount: discountAmount,
-          discountedPrice: discountedPrice,
         };
       } else {
         updatedCart[index] = {
           ...updatedCart[index],
           discountAmount: discountAmount,
-          discountedPrice: updatedCart[index].price,
         };
       }
     }
@@ -158,7 +149,7 @@ export const CreateOrder: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
           {/* Customer Info */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{xs: 12, md: 4}}>
             <Typography variant='h6'>Thông tin khách hàng</Typography>
             <Controller
               name='customerName'
@@ -222,7 +213,7 @@ export const CreateOrder: React.FC = () => {
           </Grid>
 
           {/* Product Selection */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{xs: 12, md: 8}}>
             <Typography variant='h6'>Giỏ hàng</Typography>
             <Select
               displayEmpty
@@ -260,16 +251,16 @@ export const CreateOrder: React.FC = () => {
                       <TableCell>{item.name}</TableCell>
                       <TableCell>
                         <TextField
-                          type='text'
-                          value={formatVND(item.price)}
+                          type='number'
+                          value={item.price}
                           onChange={(e) =>
-                            updateCartItem(
-                              index,
-                              'price',
-                              parseVNDInput(e.target.value)
-                            )
+                            updateCartItem(index, 'price', e.target.value)
                           }
-                          inputProps={{min: 0}}
+                          slotProps={{
+                            htmlInput: {
+                              min: 0,
+                            },
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -283,7 +274,11 @@ export const CreateOrder: React.FC = () => {
                               Number(e.target.value)
                             )
                           }
-                          inputProps={{min: 1}}
+                          slotProps={{
+                            htmlInput: {
+                              min: 1,
+                            },
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -300,9 +295,7 @@ export const CreateOrder: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {formatVND(
-                          item.discountAmount == 0
-                            ? item.price * item.quantity
-                            : item.discountedPrice * item.quantity
+                          (item.price - item.discountAmount) * item.quantity
                         )}
                       </TableCell>
                       <TableCell>
@@ -351,15 +344,19 @@ export const CreateOrder: React.FC = () => {
               render={({field}) => (
                 <TextField
                   {...field}
+                  type='number'
                   fullWidth
                   label='Tiền khách đưa'
-                  value={formatVND(field.value)}
-                  onChange={(e) =>
-                    setValue('cashGiven', parseVNDInput(e.target.value))
-                  }
+                  value={field.value}
+                  onChange={(e) => setValue('cashGiven', e.target.value)}
                   error={!!errors.cashGiven}
                   helperText={errors.cashGiven?.message}
                   margin='normal'
+                  slotProps={{
+                    htmlInput: {
+                      min: 0,
+                    },
+                  }}
                 />
               )}
             />
@@ -376,7 +373,7 @@ export const CreateOrder: React.FC = () => {
           <CardContent>
             <Typography variant='h6'>Tổng cộng: {formatVND(total)}</Typography>
             <Button variant='contained' color='primary' type='submit'>
-              Tạo đơn hàng
+              Tạo đơn
             </Button>
           </CardContent>
         </Card>
@@ -428,8 +425,19 @@ export const CreateOrder: React.FC = () => {
                     <TableCell>{orderDetails?.customerPhone}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Tổng tiền</TableCell>
-                    <TableCell>{formatVND(orderDetails?.total || 0)}</TableCell>
+                    <TableCell>Số Tiền khách Trả</TableCell>
+                    <TableCell>
+                      {formatVND(orderDetails?.cashGiven || 0)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Trả lại khách</TableCell>
+                    <TableCell>
+                      {formatVND(
+                        Number(orderDetails?.cashGiven) -
+                          Number(orderDetails?.total) || 0
+                      )}
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -458,13 +466,17 @@ export const CreateOrder: React.FC = () => {
                       <TableCell>{item.discountCode}</TableCell>
                       <TableCell>
                         {formatVND(
-                          item.discountAmount == 0
-                            ? item.price * item.quantity
-                            : item.discountedPrice * item.quantity
+                          (item.price - item.discountAmount) * item.quantity
                         )}
                       </TableCell>
                     </TableRow>
                   ))}
+                  <TableRow>
+                    <TableCell colSpan={4} align='right'>
+                      <strong>Tổng tiền</strong>
+                    </TableCell>
+                    <TableCell>{formatVND(orderDetails?.total || 0)}</TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
