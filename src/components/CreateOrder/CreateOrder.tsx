@@ -132,6 +132,11 @@ export const CreateOrder: React.FC = () => {
   };
 
   const onSubmit = (data: FormData) => {
+    if (cart.length == 0) {
+      alert('Vui lòng chọn đơn hàng');
+      return;
+    }
+
     if (data.cashGiven < total) {
       alert('Số tiền khách đưa thiếu');
       return;
