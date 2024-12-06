@@ -4,10 +4,8 @@ import {
   Button,
   Card,
   CardContent,
-  Fade,
   FormControlLabel,
   MenuItem,
-  Modal,
   Paper,
   Radio,
   RadioGroup,
@@ -34,6 +32,7 @@ import type {
 } from '../../types/types';
 import productsMock from '../../mock/productsMock';
 import discountCodesMock from '../../mock/discountCodesMock';
+import ConfirmOrder from './ConfirmOrder/ConfirmOrder';
 
 export const CreateOrder: React.FC = () => {
   const {
@@ -48,7 +47,7 @@ export const CreateOrder: React.FC = () => {
       customerEmail: '',
       customerPhone: '',
       paymentMethod: 'cash',
-      cashGiven: '',
+      cashGiven: 0,
     },
   });
 
@@ -133,6 +132,10 @@ export const CreateOrder: React.FC = () => {
   };
 
   const onSubmit = (data: FormData) => {
+    if (data.cashGiven < total) {
+      alert('Số tiền khách đưa thiếu');
+      return;
+    }
     setOrderDetails({...data, cart, total});
     setOpenModal(true);
   };
@@ -322,7 +325,16 @@ export const CreateOrder: React.FC = () => {
             name='paymentMethod'
             control={control}
             render={({field}) => (
-              <RadioGroup row {...field}>
+              <RadioGroup
+                row
+                {...field}
+                onChange={(e) => {
+                  field.onChange(e);
+                  // if (e.target.value === 'cash') {
+                  //   setValue('cashGiven', 0);
+                  // }
+                }}
+              >
                 <FormControlLabel
                   value='cash'
                   control={<Radio />}
@@ -348,7 +360,9 @@ export const CreateOrder: React.FC = () => {
                   fullWidth
                   label='Tiền khách đưa'
                   value={field.value}
-                  onChange={(e) => setValue('cashGiven', e.target.value)}
+                  onChange={(e) =>
+                    setValue('cashGiven', Number(e.target.value))
+                  }
                   error={!!errors.cashGiven}
                   helperText={errors.cashGiven?.message}
                   margin='normal'
@@ -378,128 +392,12 @@ export const CreateOrder: React.FC = () => {
           </CardContent>
         </Card>
       </form>
-
-      <Modal open={openModal} onClose={handleCloseModal} closeAfterTransition>
-        <Fade in={openModal}>
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              padding: 4,
-              backgroundColor: 'white',
-              borderRadius: 2,
-
-              width: '90vw',
-            }}
-          >
-            <Typography variant='h6' gutterBottom>
-              Xác nhận đơn hàng
-            </Typography>
-
-            {/* Display Order Information */}
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <strong>Thông tin</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Chi tiết</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>Khách hàng</TableCell>
-                    <TableCell>{orderDetails?.customerName}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Email</TableCell>
-                    <TableCell>{orderDetails?.customerEmail}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Số điện thoại</TableCell>
-                    <TableCell>{orderDetails?.customerPhone}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Số Tiền khách Trả</TableCell>
-                    <TableCell>
-                      {formatVND(orderDetails?.cashGiven || 0)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Trả lại khách</TableCell>
-                    <TableCell>
-                      {formatVND(
-                        Number(orderDetails?.cashGiven) -
-                          Number(orderDetails?.total) || 0
-                      )}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <Typography variant='h6' gutterBottom sx={{marginTop: 3}}>
-              Giỏ hàng
-            </Typography>
-            <TableContainer component={Paper} sx={{maxHeight: 400}}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Sản phẩm</TableCell>
-                    <TableCell>Đơn giá</TableCell>
-                    <TableCell>Số lượng</TableCell>
-                    <TableCell>Mã giảm giá</TableCell>
-                    <TableCell>Thành tiền</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {orderDetails?.cart.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell>{formatVND(item.price)}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{item.discountCode}</TableCell>
-                      <TableCell>
-                        {formatVND(
-                          (item.price - item.discountAmount) * item.quantity
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow>
-                    <TableCell colSpan={4} align='right'>
-                      <strong>Tổng tiền</strong>
-                    </TableCell>
-                    <TableCell>{formatVND(orderDetails?.total || 0)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <Box sx={{marginTop: 2}}>
-              <Button
-                variant='contained'
-                color='primary'
-                onClick={handleCloseModal}
-              >
-                Xác nhận
-              </Button>
-              <Button
-                variant='outlined'
-                sx={{marginLeft: 2}}
-                onClick={handleCloseModal}
-              >
-                Hủy
-              </Button>
-            </Box>
-          </Box>
-        </Fade>
-      </Modal>
+      {}
+      <ConfirmOrder
+        openModal={openModal}
+        handleCloseModal={handleCloseModal}
+        orderDetails={orderDetails}
+      />
     </Box>
   );
 };

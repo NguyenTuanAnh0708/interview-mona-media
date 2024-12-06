@@ -18,7 +18,7 @@ export type FormData = {
   customerEmail: string;
   customerPhone: string;
   paymentMethod: string;
-  cashGiven: string;
+  cashGiven: number;
 };
 
 export interface IOrderDetails {
@@ -26,7 +26,7 @@ export interface IOrderDetails {
   customerEmail: string;
   customerPhone: string;
   paymentMethod: string;
-  cashGiven: string;
+  cashGiven: number;
   cart: CartItem[];
   total: number;
 }
